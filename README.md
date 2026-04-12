@@ -2,6 +2,8 @@
 
 AWS Lambda functions for KRA project.
 
+**Repository:** [github.com/krealalejo/kra-lambdas](https://github.com/krealalejo/kra-lambdas)
+
 ## Functions
 
 ### thumbnail-generator
