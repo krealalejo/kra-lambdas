@@ -13,3 +13,17 @@ await esbuild.build({
 });
 
 console.log('Build complete: dist/index.js');
+
+await esbuild.build({
+  entryPoints: ['src/email-handler.ts'],
+  bundle: true,
+  platform: 'node',
+  target: 'node20',
+  outfile: 'dist/email.js',
+  format: 'cjs',
+  external: ['@aws-sdk/*', 'sharp'],
+  minify: true,
+  sourcemap: false,
+});
+
+console.log('Build complete: dist/email.js');
