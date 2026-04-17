@@ -12,6 +12,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1032.0",
     "sharp": "^0.33.0"
   },
   "devDependencies": {
