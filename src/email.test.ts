@@ -1,49 +1,46 @@
-import { describe, it, mock, before, afterEach } from 'node:test';
-import assert from 'node:assert';
-import { SESClient } from '@aws-sdk/client-ses';
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
+import { SESClient } from '@aws-sdk/client-ses'
 
 // Set env before importing email module (module-level const reads this at import time)
-process.env['FROM_EMAIL'] = 'krealalejo@gmail.com';
+process.env['FROM_EMAIL'] = 'krealalejo@gmail.com'
 
-// Import once — ESM caches modules, subsequent dynamic imports return the same instance
-import { sendLeadNotification } from './email.js';
+import { sendLeadNotification } from './email.js'
 
 describe('sendLeadNotification', () => {
-  let sendMock: ReturnType<typeof mock.method>;
+  const sendMock = vi.fn().mockResolvedValue({})
 
-  before(() => {
-    // Mock SESClient.prototype.send so the module-level `ses` instance uses our mock
-    sendMock = mock.method(SESClient.prototype, 'send', async () => ({}));
-  });
+  beforeAll(() => {
+    vi.spyOn(SESClient.prototype, 'send').mockImplementation(sendMock)
+  })
 
   afterEach(() => {
-    sendMock.mock.resetCalls();
-  });
+    sendMock.mockClear()
+  })
 
   it('calls ses.send once', async () => {
-    await sendLeadNotification('user@test.com', 'Hello!');
-    assert.strictEqual(sendMock.mock.calls.length, 1);
-  });
+    await sendLeadNotification('user@test.com', 'Hello!')
+    expect(sendMock).toHaveBeenCalledTimes(1)
+  })
 
   it('uses FROM_EMAIL as Source and ToAddress', async () => {
-    await sendLeadNotification('user@test.com', 'Hello!');
-    const cmd = sendMock.mock.calls[0]?.arguments[0] as any;
-    assert.strictEqual(cmd.input.Source, 'krealalejo@gmail.com');
-    assert.deepStrictEqual(cmd.input.Destination.ToAddresses, ['krealalejo@gmail.com']);
-  });
+    await sendLeadNotification('user@test.com', 'Hello!')
+    const cmd = sendMock.mock.calls[0][0] as any
+    expect(cmd.input.Source).toBe('krealalejo@gmail.com')
+    expect(cmd.input.Destination.ToAddresses).toEqual(['krealalejo@gmail.com'])
+  })
 
   it('sets Subject to Nuevo lead KRA', async () => {
-    await sendLeadNotification('user@test.com', 'Hello!');
-    const cmd = sendMock.mock.calls[0]?.arguments[0] as any;
-    assert.strictEqual(cmd.input.Message.Subject.Data, 'Nuevo lead KRA');
-  });
+    await sendLeadNotification('user@test.com', 'Hello!')
+    const cmd = sendMock.mock.calls[0][0] as any
+    expect(cmd.input.Message.Subject.Data).toBe('Nuevo lead KRA')
+  })
 
   it('body text contains email and message in correct format', async () => {
-    await sendLeadNotification('user@test.com', 'my message');
-    const cmd = sendMock.mock.calls[0]?.arguments[0] as any;
-    const body = cmd.input.Message.Body.Text.Data as string;
-    assert.ok(body.includes('user@test.com'), 'body must contain lead email');
-    assert.ok(body.includes('my message'), 'body must contain lead message');
-    assert.strictEqual(body, 'Email: user@test.com\n\nMensaje:\nmy message');
-  });
-});
+    await sendLeadNotification('user@test.com', 'my message')
+    const cmd = sendMock.mock.calls[0][0] as any
+    const body = cmd.input.Message.Body.Text.Data as string
+    expect(body).toContain('user@test.com')
+    expect(body).toContain('my message')
+    expect(body).toBe('Email: user@test.com\n\nMensaje:\nmy message')
+  })
+})
