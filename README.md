@@ -4,6 +4,11 @@ Serverless background workers for the **KRA** portfolio. These functions handle 
 
 **Stack:** Node.js **20**, TypeScript, **AWS SDK v3** (SES, S3), **Sharp** for image manipulation, **Esbuild** for bundling, **Vitest** for unit testing.
 
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=krealalejo_kra-lambdas&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=krealalejo_kra-lambdas)
+![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=flat&logo=nodedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=flat&logo=awslambda&logoColor=white)
+
 ---
 
 ## Prerequisites
@@ -70,6 +75,8 @@ flowchart LR
   DDB -->|Trigger| EMAIL
   EMAIL -->|Send| SES
 ```
+
+> Full system architecture (C4 Level 1, 2 & 3): [kra-docs-architecture](https://github.com/krealalejo/kra-docs-architecture)
 
 **Workflow:** The handlers are designed to be idempotent and stateless. The thumbnail generator uses `sharp` for high-performance image processing, while the email handler consumes the `NewImage` from DynamoDB streams to capture lead data.
 
