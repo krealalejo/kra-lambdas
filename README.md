@@ -56,8 +56,8 @@ These functions are deployed as individual Lambdas and triggered by AWS events.
 ```mermaid
 flowchart LR
   subgraph AWS_Events [Events]
-    S3[S3: images/*]
-    DDB[DynamoDB Stream: leads]
+    S3["S3: images/*"]
+    DDB["DynamoDB Stream: leads"]
   end
 
   subgraph kra_lambdas [kra-lambdas]
@@ -67,7 +67,7 @@ flowchart LR
 
   subgraph Services [AWS Services]
     SES[Amazon SES]
-    S3_STORE[S3: thumbnails/*]
+    S3_STORE["S3: thumbnails/*"]
   end
 
   S3 -->|Trigger| THUMB
