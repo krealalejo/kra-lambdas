@@ -2096,12 +2096,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.10.0":
-  version: 20.19.39
-  resolution: "@types/node@npm:20.19.39"
+"@types/node@npm:^22.0.0":
+  version: 22.19.17
+  resolution: "@types/node@npm:22.19.17"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/1d16da7b5f47a7415b827fcf3b94d279febf4c14671afec74a03e47856b5270023d9beb1b9aeab4d3b622fd97d61a60206cfc2cca588663181331bc592468289
+  checksum: 10c0/b66c484c0a9f6d88b1ef360b0f487717234ee1a482cb2551ff73d9f3c43a42a777daf4c8a5eee970960728f8fe1f3877d3d8c6ffabcbca74cb401a59db700fa4
   languageName: node
   linkType: hard
 
@@ -2652,7 +2652,7 @@ __metadata:
     "@aws-sdk/client-s3": "npm:^3.500.0"
     "@aws-sdk/client-ses": "npm:^3.1032.0"
     "@types/aws-lambda": "npm:^8.10.130"
-    "@types/node": "npm:^20.10.0"
+    "@types/node": "npm:^22.0.0"
     "@vitest/coverage-v8": "npm:^4.1.4"
     esbuild: "npm:^0.20.0"
     sharp: "npm:^0.33.0"
