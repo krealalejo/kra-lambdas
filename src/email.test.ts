@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { SESClient } from '@aws-sdk/client-ses'
 
 // Set env before importing email module (module-level const reads this at import time)
-process.env['FROM_EMAIL'] = 'krealalejo@gmail.com'
+process.env['FROM_EMAIL'] = 'hi@krealalejo.dev'
+process.env['TO_EMAIL'] = 'krealalejo@gmail.com'
 
 import { sendLeadNotification } from './email.js'
 
@@ -22,10 +23,10 @@ describe('sendLeadNotification', () => {
     expect(sendMock).toHaveBeenCalledTimes(1)
   })
 
-  it('uses FROM_EMAIL as Source and ToAddress', async () => {
+  it('sends FROM hi@krealalejo.dev TO krealalejo@gmail.com', async () => {
     await sendLeadNotification('user@test.com', 'Hello!')
     const cmd = sendMock.mock.calls[0][0] as any
-    expect(cmd.input.Source).toBe('krealalejo@gmail.com')
+    expect(cmd.input.Source).toBe('hi@krealalejo.dev')
     expect(cmd.input.Destination.ToAddresses).toEqual(['krealalejo@gmail.com'])
   })
 

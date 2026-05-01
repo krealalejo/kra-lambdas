@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { SESClient } from '@aws-sdk/client-ses'
 import type { DynamoDBStreamEvent } from 'aws-lambda'
 
-process.env['FROM_EMAIL'] = 'krealalejo@gmail.com'
+process.env['FROM_EMAIL'] = 'hi@krealalejo.dev'
+process.env['TO_EMAIL'] = 'krealalejo@gmail.com'
 
 import { handler } from './email-handler.js'
 
