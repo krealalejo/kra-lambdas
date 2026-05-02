@@ -39,6 +39,7 @@ export const handler: S3Handler = async (event: S3Event): Promise<void> => {
         Key: outputKey,
         Body: thumbnailBuffer,
         ContentType: 'image/webp',
+        CacheControl: 'public, max-age=31536000, immutable',
       }));
 
       console.log(`[SUCCESS] Uploaded: s3://${bucket}/${outputKey}`);
