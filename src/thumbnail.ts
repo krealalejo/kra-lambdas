@@ -7,7 +7,7 @@ export type ProcessingStrategy = {
   quality: number;
 };
 
-export const PORTRAIT_STRATEGY: ProcessingStrategy = { width: 800, quality: 90 };
+export const PORTRAIT_STRATEGY: ProcessingStrategy = { width: 600, quality: 82 };
 export const DEFAULT_STRATEGY: ProcessingStrategy = { width: 400, quality: 80 };
 
 export function selectStrategy(key: string): ProcessingStrategy {
