@@ -1,18 +1,17 @@
 import type { DynamoDBStreamEvent, DynamoDBStreamHandler } from 'aws-lambda';
+import pino from 'pino';
 import { sendLeadNotification } from './email.js';
 
-export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent): Promise<void> => {
-  console.log('Received DynamoDB Stream event:', JSON.stringify(event, null, 2));
+const logger = pino({ level: 'error' });
 
+export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent): Promise<void> => {
   for (const record of event.Records) {
     if (record.eventName !== 'INSERT') {
-      console.error(`[SKIP] Not an INSERT event: ${record.eventName}`);
       continue;
     }
 
     const newImage = record.dynamodb?.NewImage;
     if (!newImage) {
-      console.error('[SKIP] No NewImage in record');
       continue;
     }
 
@@ -20,15 +19,13 @@ export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent)
     const message = newImage['message']?.S;
 
     if (!email || !message) {
-      console.error('[SKIP] Missing email or message field', { email, message });
       continue;
     }
 
     try {
       await sendLeadNotification(email, message);
-      console.log(`[SUCCESS] Notification sent for lead: ${email}`);
     } catch (error) {
-      console.error(`[ERROR] Failed to send notification for ${email}:`, error);
+      logger.error({ email, error }, 'Failed to send lead notification');
       throw error;
     }
   }
