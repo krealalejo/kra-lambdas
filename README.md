@@ -4,11 +4,6 @@ Serverless background workers for the **KRA** portfolio. These functions handle 
 
 **Stack:** Node.js **20**, TypeScript, **AWS SDK v3** (SES, S3), **Sharp** for image manipulation, **Esbuild** for bundling, **Vitest** for unit testing.
 
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=krealalejo_kra-lambdas&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=krealalejo_kra-lambdas)
-![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=flat&logo=nodedotjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=flat&logo=awslambda&logoColor=white)
-
 ---
 
 ## Prerequisites
@@ -19,7 +14,7 @@ Serverless background workers for the **KRA** portfolio. These functions handle 
 
 ---
 
-## Quick start
+## Quick Start
 
 1. Install dependencies: `yarn install`
 2. Run tests to verify logic: `yarn test`
@@ -54,7 +49,7 @@ These functions are deployed as individual Lambdas and triggered by AWS events.
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
   subgraph AWS_Events [Events]
     S3["S3: images/*"]
     DDB["DynamoDB Stream: leads"]
