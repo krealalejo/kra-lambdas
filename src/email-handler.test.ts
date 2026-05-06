@@ -76,4 +76,10 @@ describe('email-handler', () => {
     const event = makeEvent([makeInsertRecord({ email: 'user@test.com', message: 'Hello!' })])
     await expect(handler(event, {} as any, () => {})).rejects.toThrow('SES failure')
   })
+
+  it('skips INSERT record with no NewImage', async () => {
+    const event = makeEvent([{ eventName: 'INSERT', dynamodb: {} }])
+    await handler(event, {} as any, () => {})
+    expect(sendMock).not.toHaveBeenCalled()
+  })
 })

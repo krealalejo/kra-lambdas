@@ -44,4 +44,18 @@ describe('sendLeadNotification', () => {
     expect(body).toContain('my message')
     expect(body).toBe('Email: user@test.com\n\nMensaje:\nmy message')
   })
+
+  it('throws if FROM_EMAIL is not set', async () => {
+    const orig = process.env['FROM_EMAIL']
+    delete process.env['FROM_EMAIL']
+    await expect(sendLeadNotification('a@b.com', 'hi')).rejects.toThrow('FROM_EMAIL environment variable is not set')
+    process.env['FROM_EMAIL'] = orig
+  })
+
+  it('throws if TO_EMAIL is not set', async () => {
+    const orig = process.env['TO_EMAIL']
+    delete process.env['TO_EMAIL']
+    await expect(sendLeadNotification('a@b.com', 'hi')).rejects.toThrow('TO_EMAIL environment variable is not set')
+    process.env['TO_EMAIL'] = orig
+  })
 })
