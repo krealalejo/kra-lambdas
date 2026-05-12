@@ -48,30 +48,37 @@ describe('S3 thumbnail handler (index.ts)', () => {
     expect(sendMock).not.toHaveBeenCalled()
   })
 
-  it('skips non-processable files (e.g. .txt)', async () => {
-    const event: S3Event = { Records: [makeRecord('my-bucket', 'images/doc.txt')] }
+  it('skips files outside uploads/ prefix', async () => {
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'images/photo.jpg')] }
     await handler(event, {} as any, () => {})
     expect(sendMock).not.toHaveBeenCalled()
   })
 
-  it('downloads image, generates thumbnail and uploads for a processable jpg', async () => {
+  it('skips non-image files under uploads/', async () => {
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/blog/doc.txt')] }
+    await handler(event, {} as any, () => {})
+    expect(sendMock).not.toHaveBeenCalled()
+  })
+
+  it('downloads, processes, uploads, and deletes original for a processable jpg', async () => {
     const fakeBody = {
       transformToByteArray: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
     }
     sendMock
       .mockResolvedValueOnce({ Body: fakeBody })  // GetObjectCommand
       .mockResolvedValueOnce({})                  // PutObjectCommand
+      .mockResolvedValueOnce({})                  // DeleteObjectCommand
 
-    const event: S3Event = { Records: [makeRecord('my-bucket', 'images/photo.jpg')] }
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/blog/photo.jpg')] }
     await handler(event, {} as any, () => {})
 
-    expect(sendMock).toHaveBeenCalledTimes(2)
+    expect(sendMock).toHaveBeenCalledTimes(3)
   })
 
   it('skips record when S3 response body is empty', async () => {
     sendMock.mockResolvedValueOnce({ Body: null })
 
-    const event: S3Event = { Records: [makeRecord('my-bucket', 'images/photo.png')] }
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/blog/photo.png')] }
     await handler(event, {} as any, () => {})
 
     expect(sendMock).toHaveBeenCalledTimes(1)
@@ -80,7 +87,7 @@ describe('S3 thumbnail handler (index.ts)', () => {
   it('catches and logs per-record errors without crashing the handler', async () => {
     sendMock.mockRejectedValueOnce(new Error('S3 read failure'))
 
-    const event: S3Event = { Records: [makeRecord('my-bucket', 'images/photo.jpeg')] }
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/blog/photo.jpeg')] }
     await expect(handler(event, {} as any, () => {})).resolves.toBeUndefined()
   })
 
@@ -92,16 +99,17 @@ describe('S3 thumbnail handler (index.ts)', () => {
       .mockRejectedValueOnce(new Error('first record fails'))  // first record GetObject fails
       .mockResolvedValueOnce({ Body: fakeBody })               // second record GetObject succeeds
       .mockResolvedValueOnce({})                               // second record PutObject succeeds
+      .mockResolvedValueOnce({})                               // second record DeleteObject succeeds
 
     const event: S3Event = {
       Records: [
-        makeRecord('my-bucket', 'images/bad.jpg'),
-        makeRecord('my-bucket', 'images/good.png'),
+        makeRecord('my-bucket', 'uploads/blog/bad.jpg'),
+        makeRecord('my-bucket', 'uploads/blog/good.png'),
       ],
     }
     await handler(event, {} as any, () => {})
 
-    expect(sendMock).toHaveBeenCalledTimes(3)
+    expect(sendMock).toHaveBeenCalledTimes(4)
   })
 
   it('decodes URL-encoded key with plus signs correctly', async () => {
@@ -111,13 +119,13 @@ describe('S3 thumbnail handler (index.ts)', () => {
     sendMock
       .mockResolvedValueOnce({ Body: fakeBody })
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
 
-    // Manually construct a record with a plus-encoded key
-    const record = makeRecord('my-bucket', 'images/my+photo.jpg')
-    record.s3.object.key = 'images/my+photo.jpg'
+    const record = makeRecord('my-bucket', 'uploads/blog/my+photo.jpg')
+    record.s3.object.key = 'uploads/blog/my+photo.jpg'
     const event: S3Event = { Records: [record] }
 
     await handler(event, {} as any, () => {})
-    expect(sendMock).toHaveBeenCalledTimes(2)
+    expect(sendMock).toHaveBeenCalledTimes(3)
   })
 })
