@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import type { S3Event, S3Handler } from 'aws-lambda';
 import pino from 'pino';
 import { generateThumbnail, buildOutputKey, isProcessableImage, selectStrategy } from './thumbnail.js';
@@ -35,6 +35,8 @@ export const handler: S3Handler = async (event: S3Event): Promise<void> => {
         ContentType: 'image/webp',
         CacheControl: 'public, max-age=31536000, immutable',
       }));
+
+      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     } catch (error) {
       logger.error({ key, error }, 'Failed to process thumbnail');
     }
