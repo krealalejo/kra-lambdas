@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 
 export type ProcessingStrategy = {
   width: number;
@@ -17,7 +17,7 @@ export function selectStrategy(key: string): ProcessingStrategy {
 export function isProcessableImage(key: string): boolean {
   if (!key.startsWith('uploads/')) return false;
   const ext = key.toLowerCase().slice(key.lastIndexOf('.'));
-  return ALLOWED_EXTENSIONS.includes(ext);
+  return ALLOWED_EXTENSIONS.has(ext);
 }
 
 export function buildOutputKey(inputKey: string): string {
