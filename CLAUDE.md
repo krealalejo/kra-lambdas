@@ -9,9 +9,9 @@
 
 ## Lambda-Specific Rules
 
-- **Runtime:** Node.js 20, TypeScript. All source in `src/`; built artifacts in `dist/` via Esbuild (`yarn build`).
-- **Package manager:** Yarn.
-- **Tests:** Vitest for unit tests. `yarn test` must pass before any commit.
+- **Runtime:** Node.js 20, TypeScript. All source in `src/`; built artifacts in `dist/` via Esbuild (`pnpm build`).
+- **Package manager:** pnpm.
+- **Tests:** Vitest for unit tests. `pnpm test` must pass before any commit.
 - **Deployment:** Managed entirely by Terraform in `kra-infra`. Do NOT deploy Lambda functions manually with AWS CLI — Terraform owns the infrastructure state.
 - **Idempotent handlers:** All Lambda handlers must be safe to retry. DynamoDB writes use conditional expressions or upserts where needed.
 - **No credentials in code:** Lambda execution roles (IAM) grant permissions — never hardcode AWS credentials or pass them as environment variables.
