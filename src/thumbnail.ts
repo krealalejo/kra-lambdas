@@ -23,30 +23,22 @@ export function isProcessableImage(key: string): boolean {
   return ALLOWED_EXTENSIONS.has(ext);
 }
 
+function stripExtension(filename: string): string {
+  const lastDot = filename.lastIndexOf('.');
+  return lastDot > 0 ? filename.slice(0, lastDot) : filename;
+}
+
 export function buildOutputKey(inputKey: string): string {
   if (inputKey.startsWith('uploads/portraits/')) {
-    const filename = inputKey.slice('uploads/portraits/'.length);
-    const lastDot = filename.lastIndexOf('.');
-    const baseName = lastDot > 0 ? filename.slice(0, lastDot) : filename;
-    return `portraits/${baseName}.webp`;
+    return `portraits/${stripExtension(inputKey.slice('uploads/portraits/'.length))}.webp`;
   }
   if (inputKey.startsWith('uploads/logos/')) {
-    const filename = inputKey.slice('uploads/logos/'.length);
-    const lastDot = filename.lastIndexOf('.');
-    const baseName = lastDot > 0 ? filename.slice(0, lastDot) : filename;
-    return `logos/${baseName}.webp`;
+    return `logos/${stripExtension(inputKey.slice('uploads/logos/'.length))}.webp`;
   }
   if (inputKey.startsWith('uploads/blog/')) {
-    const filename = inputKey.slice('uploads/blog/'.length);
-    const lastDot = filename.lastIndexOf('.');
-    const baseName = lastDot > 0 ? filename.slice(0, lastDot) : filename;
-    return `blog/${baseName}-cover.webp`;
+    return `blog/${stripExtension(inputKey.slice('uploads/blog/'.length))}-cover.webp`;
   }
-  // fallback for any other uploads/ key
-  const withoutPrefix = inputKey.replace(/^uploads\//, '');
-  const lastDot = withoutPrefix.lastIndexOf('.');
-  const baseName = lastDot > 0 ? withoutPrefix.slice(0, lastDot) : withoutPrefix;
-  return `processed/${baseName}.webp`;
+  return `processed/${stripExtension(inputKey.replace(/^uploads\//, ''))}.webp`;
 }
 
 export async function generateThumbnail(input: Buffer, strategy: ProcessingStrategy): Promise<Buffer> {
