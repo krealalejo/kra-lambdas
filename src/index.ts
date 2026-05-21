@@ -1,7 +1,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import type { S3Event, S3Handler } from 'aws-lambda';
 import pino from 'pino';
-import { generateThumbnail, buildOutputKey, isProcessableImage, selectStrategy } from './thumbnail.js';
+import { generateThumbnail, generateLogo, buildOutputKey, isProcessableImage, selectStrategy } from './thumbnail.js';
 
 const s3 = new S3Client({});
 const logger = pino({ level: 'error' });
@@ -25,7 +25,9 @@ export const handler: S3Handler = async (event: S3Event): Promise<void> => {
 
       const inputBuffer = Buffer.from(await getResponse.Body.transformToByteArray());
       const strategy = selectStrategy(key);
-      const thumbnailBuffer = await generateThumbnail(inputBuffer, strategy);
+      const thumbnailBuffer = key.startsWith('uploads/logos/')
+        ? await generateLogo(inputBuffer, strategy)
+        : await generateThumbnail(inputBuffer, strategy);
       const outputKey = buildOutputKey(key);
 
       await s3.send(new PutObjectCommand({

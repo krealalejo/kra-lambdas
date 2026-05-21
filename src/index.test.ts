@@ -7,6 +7,7 @@ vi.mock('./thumbnail.js', async (importOriginal) => {
   return {
     ...original,
     generateThumbnail: vi.fn().mockResolvedValue(Buffer.from('thumb-data')),
+    generateLogo: vi.fn().mockResolvedValue(Buffer.from('logo-data')),
   }
 })
 
@@ -110,6 +111,21 @@ describe('S3 thumbnail handler (index.ts)', () => {
     await handler(event, {} as any, () => {})
 
     expect(sendMock).toHaveBeenCalledTimes(4)
+  })
+
+  it('processes a logo upload through uploads/logos/ prefix', async () => {
+    const fakeBody = {
+      transformToByteArray: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+    }
+    sendMock
+      .mockResolvedValueOnce({ Body: fakeBody })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+
+    const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/logos/acme.png')] }
+    await handler(event, {} as any, () => {})
+
+    expect(sendMock).toHaveBeenCalledTimes(3)
   })
 
   it('decodes URL-encoded key with plus signs correctly', async () => {

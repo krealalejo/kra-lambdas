@@ -1,14 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
-import { buildOutputKey, isProcessableImage, selectStrategy, generateThumbnail, PORTRAIT_STRATEGY, DEFAULT_STRATEGY } from './thumbnail.js'
+import { buildOutputKey, isProcessableImage, selectStrategy, generateThumbnail, generateLogo, PORTRAIT_STRATEGY, DEFAULT_STRATEGY, LOGO_STRATEGY } from './thumbnail.js'
 
-const { mockToBuffer, mockWebp, mockResize } = vi.hoisted(() => {
+const { mockToBuffer, mockWebp, mockResize, mockEnsureAlpha, mockTrim } = vi.hoisted(() => {
   const mockToBuffer = vi.fn().mockResolvedValue(Buffer.from('fake-webp'))
   const mockWebp = vi.fn().mockReturnValue({ toBuffer: mockToBuffer })
   const mockResize = vi.fn().mockReturnValue({ webp: mockWebp })
-  return { mockToBuffer, mockWebp, mockResize }
+  const mockEnsureAlpha = vi.fn().mockReturnValue({ resize: mockResize })
+  const mockTrim = vi.fn().mockReturnValue({ ensureAlpha: mockEnsureAlpha })
+  return { mockToBuffer, mockWebp, mockResize, mockEnsureAlpha, mockTrim }
 })
 
-vi.mock('sharp', () => ({ default: vi.fn().mockReturnValue({ resize: mockResize }) }))
+vi.mock('sharp', () => ({ default: vi.fn().mockReturnValue({ resize: mockResize, trim: mockTrim }) }))
 
 describe('buildOutputKey', () => {
   it('transforms uploads/blog/photo.jpg to blog/photo-cover.webp', () => {
@@ -33,6 +35,14 @@ describe('buildOutputKey', () => {
 
   it('falls back to processed/ prefix for unknown uploads/ path', () => {
     expect(buildOutputKey('uploads/other/file.jpg')).toBe('processed/other/file.webp')
+  })
+
+  it('transforms uploads/logos/company.png to logos/company.webp', () => {
+    expect(buildOutputKey('uploads/logos/company.png')).toBe('logos/company.webp')
+  })
+
+  it('handles logos key with no extension', () => {
+    expect(buildOutputKey('uploads/logos/acme')).toBe('logos/acme.webp')
   })
 })
 
@@ -62,6 +72,25 @@ describe('isProcessableImage', () => {
   })
 })
 
+describe('generateLogo', () => {
+  it('returns a Buffer', async () => {
+    const result = await generateLogo(Buffer.from([1, 2, 3]), LOGO_STRATEGY)
+    expect(Buffer.isBuffer(result)).toBe(true)
+  })
+
+  it('calls trim then ensureAlpha then resize', async () => {
+    await generateLogo(Buffer.from([1]), LOGO_STRATEGY)
+    expect(mockTrim).toHaveBeenCalled()
+    expect(mockEnsureAlpha).toHaveBeenCalled()
+    expect(mockResize).toHaveBeenCalledWith(LOGO_STRATEGY.width, null, { withoutEnlargement: true })
+  })
+
+  it('calls webp with quality and alphaQuality', async () => {
+    await generateLogo(Buffer.from([1]), LOGO_STRATEGY)
+    expect(mockWebp).toHaveBeenCalledWith({ quality: LOGO_STRATEGY.quality, alphaQuality: LOGO_STRATEGY.quality })
+  })
+})
+
 describe('generateThumbnail', () => {
   it('returns a Buffer', async () => {
     const result = await generateThumbnail(Buffer.from([1, 2, 3]), DEFAULT_STRATEGY)
@@ -84,6 +113,10 @@ describe('selectStrategy', () => {
     expect(selectStrategy('uploads/portraits/home.jpg')).toBe(PORTRAIT_STRATEGY)
   })
 
+  it('returns LOGO_STRATEGY for uploads/logos/ prefix', () => {
+    expect(selectStrategy('uploads/logos/acme.png')).toBe(LOGO_STRATEGY)
+  })
+
   it('returns DEFAULT_STRATEGY for uploads/blog/ prefix', () => {
     expect(selectStrategy('uploads/blog/photo.jpg')).toBe(DEFAULT_STRATEGY)
   })
@@ -95,5 +128,9 @@ describe('selectStrategy', () => {
   it('PORTRAIT_STRATEGY has higher width and quality than DEFAULT_STRATEGY', () => {
     expect(PORTRAIT_STRATEGY.width).toBeGreaterThan(DEFAULT_STRATEGY.width)
     expect(PORTRAIT_STRATEGY.quality).toBeGreaterThan(DEFAULT_STRATEGY.quality)
+  })
+
+  it('LOGO_STRATEGY has smaller width than DEFAULT_STRATEGY', () => {
+    expect(LOGO_STRATEGY.width).toBeLessThan(DEFAULT_STRATEGY.width)
   })
 })

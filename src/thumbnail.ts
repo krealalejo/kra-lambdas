@@ -9,9 +9,12 @@ export type ProcessingStrategy = {
 
 export const PORTRAIT_STRATEGY: ProcessingStrategy = { width: 600, quality: 82 };
 export const DEFAULT_STRATEGY: ProcessingStrategy = { width: 400, quality: 80 };
+export const LOGO_STRATEGY: ProcessingStrategy = { width: 128, quality: 90 };
 
 export function selectStrategy(key: string): ProcessingStrategy {
-  return key.startsWith('uploads/portraits/') ? PORTRAIT_STRATEGY : DEFAULT_STRATEGY;
+  if (key.startsWith('uploads/portraits/')) return PORTRAIT_STRATEGY;
+  if (key.startsWith('uploads/logos/')) return LOGO_STRATEGY;
+  return DEFAULT_STRATEGY;
 }
 
 export function isProcessableImage(key: string): boolean {
@@ -26,6 +29,12 @@ export function buildOutputKey(inputKey: string): string {
     const lastDot = filename.lastIndexOf('.');
     const baseName = lastDot > 0 ? filename.slice(0, lastDot) : filename;
     return `portraits/${baseName}.webp`;
+  }
+  if (inputKey.startsWith('uploads/logos/')) {
+    const filename = inputKey.slice('uploads/logos/'.length);
+    const lastDot = filename.lastIndexOf('.');
+    const baseName = lastDot > 0 ? filename.slice(0, lastDot) : filename;
+    return `logos/${baseName}.webp`;
   }
   if (inputKey.startsWith('uploads/blog/')) {
     const filename = inputKey.slice('uploads/blog/'.length);
@@ -44,5 +53,14 @@ export async function generateThumbnail(input: Buffer, strategy: ProcessingStrat
   return sharp(input)
     .resize(strategy.width, null, { withoutEnlargement: true })
     .webp({ quality: strategy.quality })
+    .toBuffer();
+}
+
+export async function generateLogo(input: Buffer, strategy: ProcessingStrategy): Promise<Buffer> {
+  return sharp(input)
+    .trim()
+    .ensureAlpha()
+    .resize(strategy.width, null, { withoutEnlargement: true })
+    .webp({ quality: strategy.quality, alphaQuality: strategy.quality })
     .toBuffer();
 }
