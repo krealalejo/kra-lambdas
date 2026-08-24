@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pnpm install
-pnpm test                              # Vitest run + coverage (runs on pre-push via lefthook)
+pnpm test                              # Vitest run + coverage
 pnpm test:watch                        # watch mode
 pnpm build                             # Esbuild → dist/index.js and dist/email.js
 pnpm typecheck
