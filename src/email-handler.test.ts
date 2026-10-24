@@ -82,4 +82,10 @@ describe('email-handler', () => {
     await handler(event, {} as any, () => {})
     expect(sendMock).not.toHaveBeenCalled()
   })
+
+  it('handles an event without Records', async () => {
+    const event = {} as DynamoDBStreamEvent
+    await expect(handler(event, {} as any, () => {})).resolves.toBeUndefined()
+    expect(sendMock).not.toHaveBeenCalled()
+  })
 })

@@ -5,7 +5,7 @@ import { sendLeadNotification } from './email.js';
 const logger = pino({ level: 'error' });
 
 export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent): Promise<void> => {
-  for (const record of event.Records) {
+  for (const record of event.Records ?? []) {
     if (record.eventName !== 'INSERT') {
       continue;
     }
