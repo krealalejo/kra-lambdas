@@ -85,22 +85,21 @@ describe('S3 thumbnail handler (index.ts)', () => {
     expect(sendMock).toHaveBeenCalledTimes(1)
   })
 
-  it('catches and logs per-record errors without crashing the handler', async () => {
+  it('handles an event without Records', async () => {
+    const event = {} as S3Event
+    await expect(handler(event, {} as any, () => {})).resolves.toBeUndefined()
+    expect(sendMock).not.toHaveBeenCalled()
+  })
+
+  it('logs and rethrows per-record errors so the invocation fails', async () => {
     sendMock.mockRejectedValueOnce(new Error('S3 read failure'))
 
     const event: S3Event = { Records: [makeRecord('my-bucket', 'uploads/blog/photo.jpeg')] }
-    await expect(handler(event, {} as any, () => {})).resolves.toBeUndefined()
+    await expect(handler(event, {} as any, () => {})).rejects.toThrow('S3 read failure')
   })
 
-  it('continues processing remaining records after one fails', async () => {
-    const fakeBody = {
-      transformToByteArray: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
-    }
-    sendMock
-      .mockRejectedValueOnce(new Error('first record fails'))  // first record GetObject fails
-      .mockResolvedValueOnce({ Body: fakeBody })               // second record GetObject succeeds
-      .mockResolvedValueOnce({})                               // second record PutObject succeeds
-      .mockResolvedValueOnce({})                               // second record DeleteObject succeeds
+  it('stops processing remaining records after one fails', async () => {
+    sendMock.mockRejectedValueOnce(new Error('first record fails'))
 
     const event: S3Event = {
       Records: [
@@ -108,9 +107,9 @@ describe('S3 thumbnail handler (index.ts)', () => {
         makeRecord('my-bucket', 'uploads/blog/good.png'),
       ],
     }
-    await handler(event, {} as any, () => {})
+    await expect(handler(event, {} as any, () => {})).rejects.toThrow('first record fails')
 
-    expect(sendMock).toHaveBeenCalledTimes(4)
+    expect(sendMock).toHaveBeenCalledTimes(1)
   })
 
   it('processes a logo upload through uploads/logos/ prefix', async () => {

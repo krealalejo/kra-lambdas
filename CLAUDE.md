@@ -38,6 +38,7 @@ Flow:
    - `uploads/blog/x.jpg` → `blog/x-cover.webp`
    - other → `processed/x.webp`
 5. Writes WebP to the output key, then **deletes the original** upload
+6. On any processing error, logs and re-throws — the invocation fails, Lambda retries the async event twice, and after those retries the failed event is sent to the `kra-thumbnail-dlq` SQS queue defined in kra-infra; remaining records in the event are not processed
 
 `sharp` is marked `external` in esbuild — it is provided by a Lambda layer built by Terraform (linux/amd64 Docker build).
 
