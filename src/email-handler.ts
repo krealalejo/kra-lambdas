@@ -1,6 +1,7 @@
 import type { DynamoDBStreamEvent, DynamoDBStreamHandler } from 'aws-lambda';
 import pino from 'pino';
 import { sendLeadNotification } from './email.js';
+import { sendTelegram } from './telegram.js';
 
 const logger = pino({ level: 'error' });
 
@@ -27,6 +28,12 @@ export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent)
     } catch (error) {
       logger.error({ email, error }, 'Failed to send lead notification');
       throw error;
+    }
+
+    try {
+      await sendTelegram(`📬 New KRA lead\n\nEmail: ${email}\n\nMessage:\n${message}`);
+    } catch (error) {
+      logger.error({ email, error }, 'Failed to send lead Telegram notification');
     }
   }
 };

@@ -5,7 +5,10 @@ import type { DynamoDBStreamEvent } from 'aws-lambda'
 process.env['FROM_EMAIL'] = 'hi@krealalejo.dev'
 process.env['TO_EMAIL'] = 'krealalejo@gmail.com'
 
+vi.mock('./telegram.js', () => ({ sendTelegram: vi.fn().mockResolvedValue(undefined) }))
+
 import { handler } from './email-handler.js'
+import { sendTelegram } from './telegram.js'
 
 function makeInsertRecord(fields: Record<string, string | undefined>) {
   const newImage: Record<string, { S: string }> = {}
@@ -33,6 +36,7 @@ describe('email-handler', () => {
 
   afterEach(() => {
     sendMock.mockClear()
+    vi.mocked(sendTelegram).mockClear()
   })
 
   it('skips non-INSERT records (MODIFY)', async () => {
@@ -75,6 +79,25 @@ describe('email-handler', () => {
     sendMock.mockRejectedValueOnce(new Error('SES failure'))
     const event = makeEvent([makeInsertRecord({ email: 'user@test.com', message: 'Hello!' })])
     await expect(handler(event, {} as any, () => {})).rejects.toThrow('SES failure')
+  })
+
+  it('sends the lead to Telegram after the email', async () => {
+    const event = makeEvent([makeInsertRecord({ email: 'user@test.com', message: 'Hello!' })])
+    await handler(event, {} as any, () => {})
+    expect(sendTelegram).toHaveBeenCalledWith('📬 New KRA lead\n\nEmail: user@test.com\n\nMessage:\nHello!')
+  })
+
+  it('does not fail the invocation when Telegram fails', async () => {
+    vi.mocked(sendTelegram).mockRejectedValueOnce(new Error('Telegram down'))
+    const event = makeEvent([makeInsertRecord({ email: 'user@test.com', message: 'Hello!' })])
+    await expect(handler(event, {} as any, () => {})).resolves.toBeUndefined()
+  })
+
+  it('does not notify Telegram when the email send fails', async () => {
+    sendMock.mockRejectedValueOnce(new Error('SES failure'))
+    const event = makeEvent([makeInsertRecord({ email: 'user@test.com', message: 'Hello!' })])
+    await expect(handler(event, {} as any, () => {})).rejects.toThrow('SES failure')
+    expect(sendTelegram).not.toHaveBeenCalled()
   })
 
   it('skips INSERT record with no NewImage', async () => {
