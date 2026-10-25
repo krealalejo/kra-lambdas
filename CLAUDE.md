@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm install
 pnpm test                              # Vitest run + coverage
 pnpm test:watch                        # watch mode
-pnpm build                             # Esbuild → dist/index.js and dist/email.js
+pnpm build                             # Esbuild → dist/index.js, dist/email.js, dist/alerts.js and dist/digest.js
 pnpm typecheck
 ```
 
@@ -54,6 +54,14 @@ Flow:
 4. On SES failure, re-throws — DynamoDB Streams will retry the batch
 
 Env vars required on the Lambda: `FROM_EMAIL` (verified SES identity, used as both sender and recipient via `TO_EMAIL`).
+
+### Telegram notifier
+
+Secrets are read at runtime from SSM (`src/telegram.ts`, cached per container); the parameter names arrive through `TELEGRAM_BOT_TOKEN_PARAM`, `TELEGRAM_CHAT_ID_PARAM` and `GITHUB_TOKEN_PARAM`.
+
+- **Lead alerts** (`src/email-handler.ts`): after the SES send succeeds, the lead is also sent to Telegram. A Telegram failure is logged and never fails the invocation, so the SES retry and DLQ behaviour is unchanged.
+- **AWS alerts** (`src/alerts-handler.ts` → `dist/alerts.js`): subscribed to the `kra-alarms` and `kra-budget-alerts` SNS topics. CloudWatch alarm JSON is formatted per state; anything else is forwarded as plain text. Errors are re-thrown so SNS retries.
+- **Weekly digest** (`src/digest-handler.ts` → `dist/digest.js`): scheduled Mondays 08:00 Europe/Madrid. Builds the cost section (`src/costs.ts`, Cost Explorer) and the open pull requests section (`src/pull-requests.ts`, GitHub search `user:<login>`). A failing section is reported as unavailable without blocking the other.
 
 ### Build notes
 
