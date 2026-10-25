@@ -1,29 +1,24 @@
 import * as esbuild from 'esbuild';
 
-await esbuild.build({
-  entryPoints: ['src/index.ts'],
-  bundle: true,
-  platform: 'node',
-  target: 'node20',
-  outfile: 'dist/index.js',
-  format: 'cjs',
-  external: ['@aws-sdk/*', 'sharp'],
-  minify: true,
-  sourcemap: false,
-});
+const bundles = [
+  { entry: 'src/index.ts', outfile: 'dist/index.js' },
+  { entry: 'src/email-handler.ts', outfile: 'dist/email.js' },
+  { entry: 'src/alerts-handler.ts', outfile: 'dist/alerts.js' },
+  { entry: 'src/digest-handler.ts', outfile: 'dist/digest.js' },
+];
 
-console.log('Build complete: dist/index.js');
+for (const { entry, outfile } of bundles) {
+  await esbuild.build({
+    entryPoints: [entry],
+    bundle: true,
+    platform: 'node',
+    target: 'node20',
+    outfile,
+    format: 'cjs',
+    external: ['@aws-sdk/*', 'sharp'],
+    minify: true,
+    sourcemap: false,
+  });
 
-await esbuild.build({
-  entryPoints: ['src/email-handler.ts'],
-  bundle: true,
-  platform: 'node',
-  target: 'node20',
-  outfile: 'dist/email.js',
-  format: 'cjs',
-  external: ['@aws-sdk/*', 'sharp'],
-  minify: true,
-  sourcemap: false,
-});
-
-console.log('Build complete: dist/email.js');
+  console.log(`Build complete: ${outfile}`);
+}
