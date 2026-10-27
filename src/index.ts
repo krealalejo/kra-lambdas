@@ -1,47 +1,50 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import type { S3Event, S3Handler } from 'aws-lambda';
+import type { S3Event, S3EventRecord, S3Handler } from 'aws-lambda';
 import pino from 'pino';
 import { generateThumbnail, generateLogo, buildOutputKey, isProcessableImage, selectStrategy } from './thumbnail.js';
+import { forEachInSequence } from './sequence.js';
 
 const s3 = new S3Client({});
 const logger = pino({ level: 'error' });
 
-export const handler: S3Handler = async (event: S3Event): Promise<void> => {
-  for (const record of event.Records ?? []) {
-    const bucket = record.s3.bucket.name;
-    const key = decodeURIComponent(record.s3.object.key.replaceAll('+', ' '));
+async function processRecord(record: S3EventRecord): Promise<void> {
+  const bucket = record.s3.bucket.name;
+  const key = decodeURIComponent(record.s3.object.key.replaceAll('+', ' '));
 
-    if (!isProcessableImage(key)) {
-      continue;
-    }
-
-    try {
-      const getResponse = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-
-      if (!getResponse.Body) {
-        logger.error({ key }, 'Empty body from S3');
-        continue;
-      }
-
-      const inputBuffer = Buffer.from(await getResponse.Body.transformToByteArray());
-      const strategy = selectStrategy(key);
-      const thumbnailBuffer = key.startsWith('uploads/logos/')
-        ? await generateLogo(inputBuffer, strategy)
-        : await generateThumbnail(inputBuffer, strategy);
-      const outputKey = buildOutputKey(key);
-
-      await s3.send(new PutObjectCommand({
-        Bucket: bucket,
-        Key: outputKey,
-        Body: thumbnailBuffer,
-        ContentType: 'image/webp',
-        CacheControl: 'public, max-age=31536000, immutable',
-      }));
-
-      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-    } catch (error) {
-      logger.error({ key, error }, 'Failed to process thumbnail');
-      throw error;
-    }
+  if (!isProcessableImage(key)) {
+    return;
   }
+
+  try {
+    const getResponse = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+
+    if (!getResponse.Body) {
+      logger.error({ key }, 'Empty body from S3');
+      return;
+    }
+
+    const inputBuffer = Buffer.from(await getResponse.Body.transformToByteArray());
+    const strategy = selectStrategy(key);
+    const thumbnailBuffer = key.startsWith('uploads/logos/')
+      ? await generateLogo(inputBuffer, strategy)
+      : await generateThumbnail(inputBuffer, strategy);
+    const outputKey = buildOutputKey(key);
+
+    await s3.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: outputKey,
+      Body: thumbnailBuffer,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (error) {
+    logger.error({ key, error }, 'Failed to process thumbnail');
+    throw error;
+  }
+}
+
+export const handler: S3Handler = async (event: S3Event): Promise<void> => {
+  await forEachInSequence(event.Records ?? [], processRecord);
 };

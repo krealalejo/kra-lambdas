@@ -1,6 +1,7 @@
-import type { SNSEvent, SNSHandler } from 'aws-lambda';
+import type { SNSEvent, SNSEventRecord, SNSHandler } from 'aws-lambda';
 import pino from 'pino';
 import { sendTelegram } from './telegram.js';
+import { forEachInSequence } from './sequence.js';
 
 const logger = pino({ level: 'error' });
 
@@ -43,13 +44,15 @@ export function formatNotification(message: string, subject?: string | null): st
     .join('\n\n');
 }
 
-export const handler: SNSHandler = async (event: SNSEvent): Promise<void> => {
-  for (const record of event.Records ?? []) {
-    try {
-      await sendTelegram(formatNotification(record.Sns.Message, record.Sns.Subject));
-    } catch (error) {
-      logger.error({ error }, 'Failed to forward notification to Telegram');
-      throw error;
-    }
+async function forwardRecord(record: SNSEventRecord): Promise<void> {
+  try {
+    await sendTelegram(formatNotification(record.Sns.Message, record.Sns.Subject));
+  } catch (error) {
+    logger.error({ error }, 'Failed to forward notification to Telegram');
+    throw error;
   }
+}
+
+export const handler: SNSHandler = async (event: SNSEvent): Promise<void> => {
+  await forEachInSequence(event.Records ?? [], forwardRecord);
 };
