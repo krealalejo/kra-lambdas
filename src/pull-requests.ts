@@ -43,7 +43,7 @@ export async function fetchOpenPullRequests(token: string): Promise<OpenPullRequ
   return items.map((item) => ({
     title: item.title,
     url: item.html_url,
-    repository: item.repository_url.split('/').slice(-1)[0] ?? item.repository_url,
+    repository: item.repository_url.split('/').at(-1) ?? item.repository_url,
     author: item.user.login,
   }));
 }
